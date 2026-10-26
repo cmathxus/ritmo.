@@ -1,15 +1,17 @@
 # Ritmo
 
-Diário pessoal de alimentação e atividade para duas pessoas. Interface em português, responsiva, sem upload, sem servidor próprio. React + TypeScript + Vite; Supabase Auth e Postgres. Aproximadamente 143 kB de JavaScript comprimido no build inicial.
+Diário pessoal de alimentação e atividade para duas pessoas. Interface em português, responsiva, sem upload, sem servidor próprio. React + TypeScript + Vite; Supabase Auth e Postgres. Aproximadamente 145 kB de JavaScript comprimido no build inicial.
 
 ## O que está pronto
 
-- Contas individuais com e-mail e senha, confirmação de e-mail, recuperação e troca de senha.
+- Contas individuais com e-mail e senha, cadastro direto sem confirmação, recuperação e troca de senha.
 - Cadastro aberto para qualquer e-mail. Diários privados por padrão; dupla conectada por convite, com no máximo duas pessoas.
 - Registro, edição e exclusão de refeições em qualquer dia passado ou hoje.
 - Soma de calorias, gasto habitual, gasto extra do dia e balanço consumo menos gasto.
 - Base preservada nos dias já registrados, mesmo após alteração nas preferências.
 - Repetição rápida de refeições recentes, histórico de 14 dias e gráfico semanal.
+- Calendário próprio na paleta do app, seleção por mês/ano, navegação por teclado e marcação dos dias com refeições.
+- Animações discretas em cartões, modais, números e gráficos, respeitando movimento reduzido.
 - Visão da dupla: cada um lê os registros do outro e edita somente os próprios.
 - Exportação completa dos próprios dados em JSON.
 - Modo de demonstração local com exemplos, apenas quando não há variáveis do Supabase.
@@ -31,7 +33,7 @@ Sem `.env.local`, o site abre em demonstração. Os registros desse modo são ex
 1. Crie um projeto em https://supabase.com/dashboard.
 2. Abra `supabase/schema.sql`. Execute o arquivo inteiro no SQL Editor de um projeto novo **antes de criar as contas**. Ele cria tabelas, índices, trigger de cadastro e políticas RLS. Não execute duas vezes: o script é uma migração inicial.
 3. Em Authentication → URL Configuration, configure **Site URL** com a URL publicada e inclua essa URL e `http://localhost:5173` na lista de Redirect URLs. A recuperação de senha usa a origem atual como destino.
-4. Mantenha o provedor Email ativo, confirmação de e-mail habilitada e senha mínima de 8 caracteres. Para entrega confiável de confirmação/recuperação, configure SMTP próprio. O serviço padrão tem restrições e limites; consulte a documentação de Auth do Supabase.
+4. Mantenha o provedor Email ativo e senha mínima de 8 caracteres. Para cadastro direto, desative Confirm email em Authentication → Sign In / Providers (como neste projeto). Para entrega confiável de confirmação/recuperação, configure SMTP próprio. O serviço padrão tem restrições e limites; consulte a documentação de Auth do Supabase.
 5. Em Project Settings → API, copie a URL do projeto e a **publishable key** (ou a chave pública `anon` de projetos legados). **Nunca use secret key ou service_role no frontend.**
 6. Copie `.env.example` para `.env.local` e preencha:
 
@@ -40,13 +42,13 @@ VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=SUA_CHAVE_PUBLICA
 ```
 
-7. Reinicie `npm run dev`. Agora aparece a tela real de login. Cada um cria sua conta com qualquer e-mail, confirma o e-mail e entra. Para conectar os diários: abra Nossa dupla → Convidar meu amigo e envie o link. Seu amigo aceita o convite depois de entrar. O perfil é criado pelo banco; nenhum usuário pode escolher ou sobrescrever o ID de outra pessoa.
+7. Reinicie `npm run dev`. Agora aparece a tela real de login. Cada um cria sua conta com qualquer e-mail, entra diretamente após criar a conta. Para conectar os diários: abra Nossa dupla → Convidar meu amigo e envie o link. Seu amigo aceita o convite depois de entrar. O perfil é criado pelo banco; nenhum usuário pode escolher ou sobrescrever o ID de outra pessoa.
 
 O Supabase já foi conectado neste ambiente e o schema foi instalado no projeto em 26/10/2026. **Não execute o schema novamente neste banco.** O script continua disponível para projetos novos. A senha administrativa do Postgres não faz parte do app, do repositório nem da hospedagem; o frontend usa apenas a chave pública.
 
 O usuário autorizou cadastro aberto, sem allowlist. Cada conta começa em um espaço privado. A função de convite limita a dupla a dois membros; terceiros cadastrados não podem ler seus registros. A aceitação também compartilha o histórico existente entre as duas pessoas, conforme avisado na interface. A participação não pode ser alterada diretamente pelo frontend.
 
-**Configuração ainda necessária no painel do Supabase:** Authentication → URL Configuration → Site URL e Redirect URLs devem incluir a URL publicada. A confirmação de e-mail permanece habilitada. Sem essa configuração, o Supabase pode enviar links para seu Site URL anterior (por padrão, localhost). A configuração de Auth/SMTP não pode ser alterada usando a chave pública ou a conexão de banco.
+**Configuração ainda necessária no painel do Supabase:** Authentication → URL Configuration → Site URL e Redirect URLs devem incluir a URL publicada. A confirmação de e-mail foi desativada a pedido do usuário; o cadastro já retorna uma sessão. A recuperação de senha continua usando e-mail. Sem essa configuração, o Supabase pode enviar links de recuperação para seu Site URL anterior (por padrão, localhost). A configuração de Auth/SMTP não pode ser alterada usando a chave pública ou a conexão de banco.
 
 ## Publicar em hospedagem estática
 
@@ -83,6 +85,6 @@ npm test
 npm run build
 ```
 
-Antes do uso real, com o Supabase conectado: crie as duas contas, teste confirmação e recuperação, registre uma refeição e uma atividade, confirme os valores na outra conta e confirme que uma terceira conta consegue se cadastrar, mas não entra em uma dupla cheia nem lê os dados de outra dupla. Teste chamadas diretas ao banco para conferir que a conta A não consegue alterar dados de B.
+Antes do uso real, com o Supabase conectado: crie as duas contas, teste cadastro direto e recuperação, registre uma refeição e uma atividade, confirme os valores na outra conta e confirme que uma terceira conta consegue se cadastrar, mas não entra em uma dupla cheia nem lê os dados de outra dupla. Teste chamadas diretas ao banco para conferir que a conta A não consegue alterar dados de B.
 
 Documentação: [Supabase Auth](https://supabase.com/docs/guides/auth), [senhas e recuperação](https://supabase.com/docs/guides/auth/passwords), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [Cloudflare Pages build](https://developers.cloudflare.com/pages/configuration/build-configuration/).
