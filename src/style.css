@@ -8,3 +8,4 @@
 @media(max-height:730px) and (min-width:651px){.sidebar-note{display:none}}
 @media(min-width:651px) and (max-width:760px){.sidebar{transform:translateX(-100%);width:236px}.sidebar.open{transform:translateX(0)}.app-shell main{margin-left:0;width:100%}.mobile-menu{display:inline-flex}.mobile-backdrop{display:block;position:fixed;inset:0;background:#163b2b70;z-index:25}.toast{left:50%}}
 @media(max-width:760px){.sidebar{display:none}.sidebar.open{display:flex}}
+.invite-banner{display:flex;align-items:center;gap:15px;background:#edf4e4;border:1px solid #dce8ca;border-radius:10px;padding:20px;margin-bottom:24px}.invite-banner>svg{color:#7e9d60;flex-shrink:0}.invite-banner>div{flex:1}.invite-banner strong{font-size:13px}.invite-banner p{font-size:11px;margin-top:6px}.invite-banner button{flex-shrink:0}@media(max-width:900px){.invite-banner{flex-wrap:wrap}.invite-banner>div{flex-basis:80%}.invite-banner button{flex:1}}

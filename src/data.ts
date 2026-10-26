@@ -69,6 +69,8 @@ export function friendlyError(e:unknown) {
   if(/Email not confirmed/i.test(message)) return 'Confirme seu e-mail antes de entrar.';
   if(/rate limit/i.test(message)) return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
   if(/Failed to fetch|NetworkError/i.test(message)) return 'Não foi possível conectar. Confira sua internet e tente novamente.';
-  if(/not_allowed|not authorized/i.test(message)) return 'Este e-mail não está na lista da dupla. Confira os e-mails autorizados no Supabase.';
+  if(/duo_full/i.test(message)) return 'Essa dupla já tem duas pessoas.';
+  if(/already_paired/i.test(message)) return 'Você já está em uma dupla com outra pessoa.';
+  if(/invalid_invite|invalid input syntax for type uuid/i.test(message)) return 'Este convite não é válido. Peça um novo link ao seu amigo.';
   return 'Não foi possível concluir. Tente novamente. Se persistir, confira a configuração do Supabase.';
 }

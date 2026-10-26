@@ -1,11 +1,11 @@
 # Ritmo
 
-Diário pessoal de alimentação e atividade para duas pessoas. Interface em português, responsiva, sem upload, sem servidor próprio. React + TypeScript + Vite; Supabase Auth e Postgres. Aproximadamente 81 kB de JavaScript comprimido no build inicial.
+Diário pessoal de alimentação e atividade para duas pessoas. Interface em português, responsiva, sem upload, sem servidor próprio. React + TypeScript + Vite; Supabase Auth e Postgres. Aproximadamente 143 kB de JavaScript comprimido no build inicial.
 
 ## O que está pronto
 
 - Contas individuais com e-mail e senha, confirmação de e-mail, recuperação e troca de senha.
-- Cadastro limitado a dois e-mails configurados no banco (a verificação acontece no servidor).
+- Cadastro aberto para qualquer e-mail. Diários privados por padrão; dupla conectada por convite, com no máximo duas pessoas.
 - Registro, edição e exclusão de refeições em qualquer dia passado ou hoje.
 - Soma de calorias, gasto habitual, gasto extra do dia e balanço consumo menos gasto.
 - Base preservada nos dias já registrados, mesmo após alteração nas preferências.
@@ -29,7 +29,7 @@ Sem `.env.local`, o site abre em demonstração. Os registros desse modo são ex
 ## Conectar o Supabase (configuração única)
 
 1. Crie um projeto em https://supabase.com/dashboard.
-2. Abra `supabase/schema.sql`, substitua os dois e-mails de exemplo pelos e-mails reais (minúsculos). Execute o arquivo inteiro no SQL Editor de um projeto novo **antes de criar as contas**. Ele cria tabelas, índices, trigger de cadastro e políticas RLS. Não execute duas vezes: o script é uma migração inicial.
+2. Abra `supabase/schema.sql`. Execute o arquivo inteiro no SQL Editor de um projeto novo **antes de criar as contas**. Ele cria tabelas, índices, trigger de cadastro e políticas RLS. Não execute duas vezes: o script é uma migração inicial.
 3. Em Authentication → URL Configuration, configure **Site URL** com a URL publicada e inclua essa URL e `http://localhost:5173` na lista de Redirect URLs. A recuperação de senha usa a origem atual como destino.
 4. Mantenha o provedor Email ativo, confirmação de e-mail habilitada e senha mínima de 8 caracteres. Para entrega confiável de confirmação/recuperação, configure SMTP próprio. O serviço padrão tem restrições e limites; consulte a documentação de Auth do Supabase.
 5. Em Project Settings → API, copie a URL do projeto e a **publishable key** (ou a chave pública `anon` de projetos legados). **Nunca use secret key ou service_role no frontend.**
@@ -40,11 +40,13 @@ VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=SUA_CHAVE_PUBLICA
 ```
 
-7. Reinicie `npm run dev`. Agora aparece a tela real de login. Cada um cria sua conta usando seu e-mail autorizado, confirma o e-mail e entra. O perfil é criado pelo banco; nenhum usuário pode escolher ou sobrescrever o ID de outra pessoa.
+7. Reinicie `npm run dev`. Agora aparece a tela real de login. Cada um cria sua conta com qualquer e-mail, confirma o e-mail e entra. Para conectar os diários: abra Nossa dupla → Convidar meu amigo e envie o link. Seu amigo aceita o convite depois de entrar. O perfil é criado pelo banco; nenhum usuário pode escolher ou sobrescrever o ID de outra pessoa.
 
-Não há credenciais reais incluídas neste projeto e não foi possível testar o serviço remoto sem um projeto Supabase configurado. Um e-mail não autorizado pode receber a mensagem genérica de erro de cadastro do Supabase; confira a lista no SQL Editor.
+O Supabase já foi conectado neste ambiente e o schema foi instalado no projeto em 26/10/2026. **Não execute o schema novamente neste banco.** O script continua disponível para projetos novos. A senha administrativa do Postgres não faz parte do app, do repositório nem da hospedagem; o frontend usa apenas a chave pública.
 
-Se já criou as contas antes do schema, use um projeto novo ou crie os perfis correspondentes pelo SQL Editor após configurar a allowlist; o trigger roda apenas para contas novas. Para manter o limite de dois cadastros, não altere os e-mails autorizados sem também remover a conta antiga no painel de Auth. A alteração da allowlist revoga imediatamente o acesso da conta antiga aos dados.
+O usuário autorizou cadastro aberto, sem allowlist. Cada conta começa em um espaço privado. A função de convite limita a dupla a dois membros; terceiros cadastrados não podem ler seus registros. A aceitação também compartilha o histórico existente entre as duas pessoas, conforme avisado na interface. A participação não pode ser alterada diretamente pelo frontend.
+
+**Configuração ainda necessária no painel do Supabase:** Authentication → URL Configuration → Site URL e Redirect URLs devem incluir a URL publicada. A confirmação de e-mail permanece habilitada. Sem essa configuração, o Supabase pode enviar links para seu Site URL anterior (por padrão, localhost). A configuração de Auth/SMTP não pode ser alterada usando a chave pública ou a conexão de banco.
 
 ## Publicar em hospedagem estática
 
@@ -72,7 +74,7 @@ Outra opção: preencha `.env.local`, execute `npm run build` e envie `dist` com
 - Datas seguem o calendário local do dispositivo, sem conversão de dia para UTC.
 - Cada carregamento consulta uma janela de 43 dias. O histórico mostra os 14 dias até a data selecionada; escolha outra data para navegar. A exportação pagina todos os próprios registros em lotes de 500, além da janela exibida na interface.
 - Sem polling, rastreadores, analytics, fotos ou tabelas de nutrientes. Dados do amigo atualizam ao trocar de data/reabrir a página.
-- RLS bloqueia acesso anônimo, edição de dados do amigo, edição da allowlist pelo cliente e alteração retroativa da base diária pelo cliente.
+- RLS bloqueia acesso anônimo, edição de dados do amigo, leitura por pessoas fora da dupla, mudança direta de dupla e alteração retroativa da base diária pelo cliente.
 
 ## Verificação
 
@@ -81,6 +83,6 @@ npm test
 npm run build
 ```
 
-Antes do uso real, com o Supabase conectado: crie as duas contas, teste confirmação e recuperação, registre uma refeição e uma atividade, confirme os valores na outra conta e tente um terceiro e-mail. Teste chamadas diretas ao banco para conferir que a conta A não consegue alterar dados de B.
+Antes do uso real, com o Supabase conectado: crie as duas contas, teste confirmação e recuperação, registre uma refeição e uma atividade, confirme os valores na outra conta e confirme que uma terceira conta consegue se cadastrar, mas não entra em uma dupla cheia nem lê os dados de outra dupla. Teste chamadas diretas ao banco para conferir que a conta A não consegue alterar dados de B.
 
 Documentação: [Supabase Auth](https://supabase.com/docs/guides/auth), [senhas e recuperação](https://supabase.com/docs/guides/auth/passwords), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [Cloudflare Pages build](https://developers.cloudflare.com/pages/configuration/build-configuration/).
