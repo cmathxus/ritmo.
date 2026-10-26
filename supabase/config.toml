@@ -1,0 +1,4 @@
+[functions.analyze-meal]
+# A função valida a sessão em /auth/v1/user antes de qualquer análise.
+# Compatível com as chaves publishable e tokens de sessão atuais.
+verify_jwt = false

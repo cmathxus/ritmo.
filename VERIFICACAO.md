@@ -18,3 +18,10 @@ Limite: envio/recebimento de e-mail, URL de confirmação e recuperação depend
 - Números respeitam movimento reduzido; SDK Supabase e React separados em arquivos com cache independente.
 - Navegação por data preserva o painel enquanto a consulta atualiza.
 - Revisão em iframe de 360px e 320px; rolagem horizontal corrigida nos cartões e gráfico. Ajustado tamanho do anel em telas pequenas.
+
+## Atualização de foto, saída e TMB — 26/10/2026
+
+- 21 testes Node aprovados: calendário/domínio, autenticação e validação do handler de IA, CORS, limites, respostas estruturadas, falhas/timeout e cálculos Unimed masculino/feminino.
+- PGlite: quota protegida e transacional; 20/dia por usuário, 100 global, cooldown e idempotência. Perfil metabólico com RLS exclusiva do dono, RPC com recálculo, validação e modo manual.
+- Migrações aplicadas no Supabase com TLS e CA verificada. Bases antigas preservadas como manuais; nenhuma antropometria inventada.
+- Build TypeScript/Vite aprovado. UI local: confirmação de saída/cancelar; opção por foto; TMB 75kg, 175cm, 28anos masculino moderado = 1778 basal / 2400 diária; salvamento em demonstração.
