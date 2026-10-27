@@ -32,3 +32,6 @@ Limite: envio/recebimento de e-mail, URL de confirmação e recuperação depend
 25 testes aprovados, incluindo novas contas, base manual importada, conclusão explícita e troca de conta. Teste PGlite confirma persistência da conclusão via RPC. Migração adiciona sinalizador sem alterar a base ou o histórico. Diagnóstico de 429 agora distingue saldo, orçamento e frequência conforme documentação atual da OpenAI.
 
 - Teste de navegador com cadastro real temporário no Supabase: primeiro acesso exibiu formulário automaticamente, cálculo 1778/2400 confirmado; integração migrada para Gemini 3.5 Flash-Lite, com chave server-side, foto inline, schema e limite sem fallback OpenAI. 26 testes aprovados. Ativação e inferência real aguardam GEMINI_API_KEY.
+
+## Publicação de grupos e acompanhamento
+31 testes aprovados, incluindo RLS em PGlite. Concorrência real no Supabase: 11 tentativas simultâneas aceitaram exatamente 9 além do administrador. Revogação após remoção confirmada. Migrações de grupos, objetivos, PAL e horários aplicadas com TLS verificado. Navegador: cadastro com PAL e objetivo, criação de grupo, geração de convite e refeição às 12:10 conferidos; painel Minha conta separado. Novos pedidos de convites por username, notificações e atalho direto de câmera ficaram adiados por solicitação do usuário.

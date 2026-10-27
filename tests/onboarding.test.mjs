@@ -9,7 +9,8 @@ test('explicit manual and calculator completion persist across login',()=>{
  for(const mode of ['manual','calculator'])assert.equal(onboardingState({...ready,metabolic:{mode,onboarding_completed:true}}),'complete');
 });
 test('never renders a diary or previous account data before setup is loaded',()=>{
- for(const patch of [{loading:true},{metabolic:undefined},{profile:{id:'b'}},{profile:undefined}])assert.equal(onboardingState({...ready,...patch}),'loading');
+ for(const patch of [{loading:true},{metabolic:undefined},{profile:{id:'b'}}])assert.equal(onboardingState({...ready,...patch}),'loading');
+ assert.equal(onboardingState({...ready,profile:undefined}),'profile_missing');
  assert.equal(onboardingState({...ready,error:'failed'}),'error');
  assert.equal(onboardingState({...ready,connected:false}),'inactive');
 });

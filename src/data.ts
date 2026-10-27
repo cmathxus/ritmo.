@@ -1,9 +1,9 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { dateKey, moveDate } from './domain.mjs';
 export type Profile = {id:string; name:string; base_calories:number};
-export type Meal = {id:string; user_id:string; date:string; name:string; calories:number; category:string; description?:string; created_at:string};
+export type Meal = {id:string; user_id:string; date:string; name:string; calories:number; category:string; description?:string; meal_time?:string|null; created_at:string};
 export type Day = {user_id:string; date:string; base_calories:number; extra_calories:number; activity:string};
-export type MetabolicProfile={onboarding_completed?:boolean;user_id?:string;mode:'calculator'|'manual';sex:string|null;weight:number|null;height:number|null;age:number|null;activity:string|null;basal_calories:number|null;daily_calories:number};
+export type MetabolicProfile={goal?:'deficit'|'maintenance'|'surplus';method?:'unimed'|'pal';pal?:number|null;onboarding_completed?:boolean;user_id?:string;mode:'calculator'|'manual';sex:string|null;weight:number|null;height:number|null;age:number|null;activity:string|null;basal_calories:number|null;daily_calories:number};
 export type Data = {profiles:Profile[]; meals:Meal[]; days:Day[];metabolic?:MetabolicProfile|null};
 const url=import.meta.env.VITE_SUPABASE_URL, key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export let supabase:SupabaseClient|null=null;
@@ -30,13 +30,13 @@ export function demoData():Data {
   return {profiles,meals,days};
 }
 export function persistDemo(data:Data) { localStorage.setItem(storageKey,JSON.stringify(data)); }
-export async function loadData(date:string):Promise<Data> {
+export async function loadData(date:string,userId:string):Promise<Data> {
   if(!supabase) return demoData();
   const from=moveDate(date,-35),to=moveDate(date,7);
   const [profiles,meals,days,metabolic]=await Promise.all([
-    supabase.from('profiles').select('id,name,base_calories'),
-    supabase.from('meals').select('*').gte('date',from).lte('date',to).order('created_at'),
-    supabase.from('daily_logs').select('*').gte('date',from).lte('date',to),
+    supabase.from('profiles').select('id,name,base_calories').eq('id',userId),
+    supabase.from('meals').select('*').eq('user_id',userId).gte('date',from).lte('date',to).order('meal_time',{nullsFirst:false}).order('created_at'),
+    supabase.from('daily_logs').select('*').eq('user_id',userId).gte('date',from).lte('date',to),
     supabase.from('metabolic_profiles').select('*').maybeSingle()
   ]);
   for(const r of [profiles,meals,days,metabolic]) if(r.error) throw r.error;

@@ -1,0 +1,33 @@
+import {PGlite} from '@electric-sql/pglite';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
+const db=new PGlite();const root=new URL('../',import.meta.url);
+await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;
+create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb,created_at timestamptz default now());
+create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;`);
+for(const f of ['supabase/schema.sql','supabase/migrations/20261026_meal_ai.sql','supabase/migrations/20261026_metabolism.sql','supabase/migrations/20261026_onboarding_completion.sql','supabase/migrations/20261027_goals_mealtimes.sql'])await db.exec(readFileSync(new URL(f,root),'utf8'));
+const ids=Array.from({length:15},(_,i)=>`00000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`);
+for(const [i,id] of ids.entries())await db.query(`insert into auth.users(id,email,raw_user_meta_data,created_at) values($1,$2,$3,now()+$4*interval '1 second')`,[id,`test${i}@example.com`,JSON.stringify({name:`Person ${i}`}),i]);
+async function as(i){await db.exec(`reset role;set role authenticated;set request.jwt.claim.sub='${ids[i]}';`);}
+await as(0);const oldInvite=(await db.query('select get_my_invite() as token')).rows[0].token;
+await as(1);await db.query('select join_duo($1)',[oldInvite]);
+await db.exec('reset role;');await db.exec(readFileSync(new URL('supabase/migrations/20261027_groups.sql',root),'utf8'));
+await as(0);const gid=(await db.query('select my_group_id() as id')).rows[0].id;assert.ok(gid);assert.equal((await db.query('select * from group_members')).rows.length,2);assert.equal((await db.query("select user_id from group_members where role='admin'")).rows[0].user_id,ids[0]);
+await assert.rejects(()=>db.query('select join_duo($1)',[oldInvite]));await assert.rejects(()=>db.exec("update groups set name='Hacked';"));
+const token=(await db.query('select create_group_invite($1) as i',[gid])).rows[0].i.token;assert.equal(token.length,64);await assert.rejects(()=>db.query('select * from group_invites'));
+await as(2);assert.equal((await db.query('select * from profiles')).rows.length,1);assert.equal((await db.query('select * from groups')).rows.length,0);
+const preview=(await db.query('select preview_group_invite($1) as p',[token])).rows[0].p;assert.equal(preview.members,2);assert.equal(Object.keys(preview).includes('email'),false);
+assert.equal((await db.query('select join_group($1) as r',[token])).rows[0].r.joined,true);assert.equal((await db.query('select * from profiles')).rows.length,3);
+await assert.rejects(()=>db.query('select rename_group($1,$2)',[gid,'Nope']));assert.equal((await db.query(`update profiles set name='Nope' where id='${ids[0]}' returning id`)).rows.length,0);
+await db.query("select save_metabolic_profile('calculator','male',75,175,28,'moderate',null,'surplus','pal',1.6)");assert.equal((await db.query('select * from metabolic_profiles')).rows[0].daily_calories,2845);assert.equal((await db.query('select * from metabolic_profiles')).rows[0].goal,'surplus');
+await db.query("insert into daily_logs(user_id,date,base_calories) values($1,'2026-10-26',2845)",[ids[2]]);await db.query("insert into meals(user_id,date,name,calories,category,meal_time) values($1,'2026-10-26','Teste',500,'Almoço','12:05')",[ids[2]]);
+await as(0);assert.equal((await db.query('select * from meals')).rows.length,1);assert.equal((await db.query("update meals set calories=1 returning id")).rows.length,0);assert.equal((await db.query('delete from meals returning id')).rows.length,0);assert.equal((await db.query('select * from metabolic_profiles')).rows.length,0);await assert.rejects(()=>db.query('select leave_group($1)',[gid]));
+for(let i=3;i<10;i++){await as(i);assert.equal((await db.query('select join_group($1) as r',[token])).rows[0].r.joined,true);}
+await as(10);assert.equal((await db.query('select join_group($1) as r',[token])).rows[0].r.error,'group_full');
+await as(0);await db.query('select remove_group_member($1,$2)',[gid,ids[2]]);
+await as(2);assert.equal((await db.query('select * from profiles')).rows.length,1);assert.equal((await db.query('select * from meals')).rows.length,1);assert.equal((await db.query('select * from groups')).rows.length,0);assert.ok((await db.query('select revision from group_signals')).rows[0].revision>0);
+await as(0);const newToken=(await db.query('select create_group_invite($1) as i',[gid])).rows[0].i.token;await db.query('select transfer_group_admin($1,$2)',[gid,ids[1]]);await assert.rejects(()=>db.query('select rename_group($1,$2)',[gid,'Nope']));await db.query('select leave_group($1)',[gid]);
+await as(10);assert.equal((await db.query('select join_group($1) as r',[token])).rows[0].r.error,'invalid_group_invite');assert.equal((await db.query('select join_group($1) as r',[newToken])).rows[0].r.joined,true);
+await as(11);for(let i=0;i<20;i++)assert.equal((await db.query('select preview_group_invite($1) as p',['0'.repeat(64)])).rows[0].p.error,'invalid_group_invite');assert.equal((await db.query('select preview_group_invite($1) as p',[newToken])).rows[0].p.error,'invite_rate_limit');
+await as(12);const solo=(await db.query("select create_group('Solo') as id")).rows[0].id;await db.query('select leave_group($1)',[solo]);assert.equal((await db.query('select * from groups')).rows.length,0);
+await as(13);const other=(await db.query("select create_group('Other') as id")).rows[0].id;assert.equal((await db.query('select join_group($1) as r',[newToken])).rows[0].r.error,'already_grouped');
+await db.exec('reset role;set role anon;');await assert.rejects(()=>db.query('select * from groups'));await assert.rejects(()=>db.query("select create_group('Anonymous')"));
+console.log('PASS: legacy pair migration, deterministic admin, revocation, RLS, private metabolism/goal, capacity 10, hashed/rotated invites, rate limit on failed attempts, transfer/leave/archive and anon denial.');await db.close();
