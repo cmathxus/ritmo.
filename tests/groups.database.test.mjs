@@ -47,4 +47,16 @@ await as(14);await db.query("select set_username('fresh_name')");await assert.re
 await db.exec('reset role;');await db.query("update profiles set username_next_change_at=now()-interval '1 second' where id=$1",[ids[14]]);await as(14);await db.query("select set_username('another_name')");
 await as(1);await assert.rejects(()=>db.query("select set_username('admin_renamed')"),/username_cooldown/);
 await db.exec('reset role;set role anon;');await assert.rejects(()=>db.query('select * from groups'));await assert.rejects(()=>db.query("select create_group('Anonymous')"));
+
+await db.exec('reset role;');await db.exec(readFileSync(new URL('supabase/migrations/20261028_calorie_chat_quota.sql',root),'utf8'));
+const dayKey=(await db.query("select to_char(timezone('America/Sao_Paulo',now()),'YYYY-MM-DD') as d")).rows[0].d;
+await db.query('insert into ai_usage_buckets(bucket,used) values($1,20),($2,100) on conflict(bucket) do update set used=excluded.used',[`user:${ids[0]}:${dayKey}`,`global:${dayKey}`]);
+const chat=(await db.query('select reserve_calorie_chat($1,$2) as r',[ids[0],'99999999-0000-4000-8000-000000000001'])).rows[0].r;assert.equal(chat.allowed,true);assert.equal(chat.remaining,49);
+assert.equal((await db.query('select used from ai_usage_buckets where bucket=$1',[`user:${ids[0]}:${dayKey}`])).rows[0].used,20);
+assert.equal((await db.query('select reserve_meal_analysis($1,$2) as r',[ids[0],'99999999-0000-4000-8000-000000000002'])).rows[0].r.allowed,false);
+assert.equal((await db.query('select reserve_calorie_chat($1,$2) as r',[ids[0],'99999999-0000-4000-8000-000000000003'])).rows[0].r.reason,'cooldown');
+await db.query('update ai_usage_buckets set used=50,last_request=null where bucket=$1',[`chat:user:${ids[0]}:${dayKey}`]);
+assert.equal((await db.query('select reserve_calorie_chat($1,$2) as r',[ids[0],'99999999-0000-4000-8000-000000000004'])).rows[0].r.reason,'daily_limit');
+await as(0);await assert.rejects(()=>db.query('select reserve_calorie_chat($1,$2)',[ids[0],'99999999-0000-4000-8000-000000000005']));
+await db.exec('reset role;');
 console.log('PASS: legacy pair migration, deterministic admin, revocation, RLS, private metabolism/goal, capacity 10, hashed/rotated invites, rate limit on failed attempts, transfer/leave/archive and anon denial.');await db.close();

@@ -11,7 +11,7 @@ const errors:Record<string,string>={
   AUTH_REQUIRED:'Sua sessão expirou. Entre novamente para analisar a foto.',
   AI_NOT_CONFIGURED:'A análise por foto ainda não está disponível. Você pode registrar a refeição manualmente.',
   AI_SETUP_REQUIRED:'A análise por foto ainda não está disponível. Tente novamente mais tarde.',
-  DAILY_LIMIT:'Você chegou ao limite de 20 consultas de IA de hoje (fotos e perguntas). Amanhã pode continuar; o registro manual segue disponível.',
+  DAILY_LIMIT:'Você chegou ao limite de 20 análises de fotos de hoje. Amanhã pode continuar; o registro manual segue disponível.',
   GLOBAL_LIMIT:'O limite de análises do app foi atingido hoje. Você ainda pode registrar manualmente.',
   COOLDOWN:'Aguarde 15 segundos entre uma análise e outra.',
   DUPLICATE_REQUEST:'Essa foto já foi enviada nesta tentativa. Inicie uma nova análise.',
@@ -38,7 +38,7 @@ export async function invoke<T>(method:'GET'|'POST',signal:AbortSignal,body?:Rec
     if(signal.aborted)throw new DOMException('Cancelled','AbortError');
     let code='AI_UNAVAILABLE';
     if(error.context instanceof Response){try{const payload=await error.context.json();code=payload.error||code;}catch{/* generic network message */}}
-    const questionErrors:Record<string,string>={AUTH_REQUIRED:'Sua sessão expirou. Entre novamente para consultar a IA.',AI_NOT_CONFIGURED:'A consulta ainda não está disponível. Tente novamente mais tarde.',INVALID_IMAGE:'O servidor de perguntas ainda precisa ser atualizado pelo responsável do app.',PHOTO_UNCLEAR:'Não consegui responder essa pergunta. Tente reformular com alimento e porção.',INVALID_AI_RESPONSE:'Não consegui montar uma resposta confiável. Tente reformular a pergunta.',AI_INCOMPLETE:'A resposta não foi concluída. Tente novamente.'};
+    const questionErrors:Record<string,string>={DAILY_LIMIT:'Você chegou ao limite de 50 mensagens do chat de hoje. Suas análises de fotos têm um limite separado.',GLOBAL_LIMIT:'O limite diário do chat foi atingido. O limite de fotos é separado.',COOLDOWN:'Aguarde 3 segundos antes de enviar outra mensagem.',INVALID_QUESTION:'Escreva uma mensagem entre 1 e 500 caracteres.',AUTH_REQUIRED:'Sua sessão expirou. Entre novamente para consultar a IA.',AI_NOT_CONFIGURED:'A consulta ainda não está disponível. Tente novamente mais tarde.',INVALID_IMAGE:'O servidor de perguntas ainda precisa ser atualizado pelo responsável do app.',PHOTO_UNCLEAR:'Não consegui responder essa pergunta. Tente reformular com alimento e porção.',INVALID_AI_RESPONSE:'Não consegui montar uma resposta confiável. Tente reformular a pergunta.',AI_INCOMPLETE:'A resposta não foi concluída. Tente novamente.'};
     throw new Error((body?.mode==='question'?questionErrors[code]:undefined)||errors[code]||errors.AI_UNAVAILABLE);
   }
   return data as T;
