@@ -5,3 +5,9 @@ dist/
 .env.*.local
 .sites-runtime/
 *.tsbuildinfo
+
+# Local planning/verification notes and legacy Sites configuration
+VERIFICACAO.md
+docs/spec-grupos.md
+.openai/
+supabase/.temp/

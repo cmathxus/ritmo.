@@ -4,7 +4,7 @@ export default function pwa(){
   let base='/';
   return {name:'ritmo-pwa',configResolved(config){base=config.base;},generateBundle(_options,bundle){
     const files=Object.keys(bundle).filter(name=>name==='index.html'||name.startsWith('assets/'));
-    const publicFiles=['ritmo-logo.png','icon-192.png','icon-512.png','apple-touch-icon.png','manifest.webmanifest'];
+    const publicFiles=['ritmo-logo.png','icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-icon.png','manifest.webmanifest'];
     const hash=createHash('sha256');for(const file of files){const entry=bundle[file];hash.update(entry.type==='chunk'?entry.code:entry.source);}for(const file of publicFiles)hash.update(readFileSync(new URL(`./public/${file}`,import.meta.url)));
     const prefix=`ritmo-shell-${encodeURIComponent(base)}-`;
     const cache=`${prefix}${hash.digest('hex').slice(0,16)}`;
