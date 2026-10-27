@@ -42,5 +42,9 @@ await as(2);assert.equal((await db.query('select goal_selected from metabolic_pr
 const beforeBase=(await db.query('select base_calories from profiles where id=$1',[ids[2]])).rows[0].base_calories;
 await db.query("select set_personal_goal('deficit')");const selectedGoal=(await db.query('select goal,goal_selected from metabolic_profiles')).rows[0];assert.equal(selectedGoal.goal,'deficit');assert.equal(selectedGoal.goal_selected,true);assert.equal((await db.query('select base_calories from profiles where id=$1',[ids[2]])).rows[0].base_calories,beforeBase);
 await assert.rejects(()=>db.query("select set_personal_goal('invalid')"));
+await db.exec('reset role;');await db.exec(readFileSync(new URL('supabase/migrations/20261027_username_cooldown.sql',root),'utf8'));
+await as(14);await db.query("select set_username('fresh_name')");await assert.rejects(()=>db.query("select set_username('another_name')"),/username_cooldown/);await db.query("select set_username('fresh_name')");
+await db.exec('reset role;');await db.query("update profiles set username_next_change_at=now()-interval '1 second' where id=$1",[ids[14]]);await as(14);await db.query("select set_username('another_name')");
+await as(1);await assert.rejects(()=>db.query("select set_username('admin_renamed')"),/username_cooldown/);
 await db.exec('reset role;set role anon;');await assert.rejects(()=>db.query('select * from groups'));await assert.rejects(()=>db.query("select create_group('Anonymous')"));
 console.log('PASS: legacy pair migration, deterministic admin, revocation, RLS, private metabolism/goal, capacity 10, hashed/rotated invites, rate limit on failed attempts, transfer/leave/archive and anon denial.');await db.close();
