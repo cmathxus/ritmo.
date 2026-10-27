@@ -7,7 +7,7 @@ window.addEventListener('appinstalled',()=>{installEvent=null;window.dispatchEve
 export function installed(){return window.matchMedia('(display-mode: standalone)').matches||!!(navigator as Navigator&{standalone?:boolean}).standalone;}
 export function startPwa(){
  if(!import.meta.env.PROD||!('serviceWorker' in navigator))return;
- window.addEventListener('load',()=>{
+ const register=()=>{
   navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`,{scope:import.meta.env.BASE_URL,updateViaCache:'none'}).then(reg=>{
    registration=reg;
    const notify=()=>{if(reg.waiting&&navigator.serviceWorker.controller)window.dispatchEvent(new Event('ritmo-update-ready'));};
@@ -15,5 +15,18 @@ export function startPwa(){
    const check=()=>{if(document.visibilityState==='visible'&&navigator.onLine)void reg.update().catch(()=>{});};
    document.addEventListener('visibilitychange',check);window.addEventListener('online',check);
   }).catch(()=>{/* Installation remains optional if browser blocks workers. */});
+ };
+ if(document.readyState==='complete')register();else window.addEventListener('load',register,{once:true});
+}
+
+export async function activatePwaUpdate(){
+ const worker=registration?.waiting;if(!worker)throw new Error('A atualização não está mais disponível. Feche e reabra o app.');
+ await new Promise<void>((resolve,reject)=>{
+  const cleanup=()=>{clearTimeout(timer);navigator.serviceWorker.removeEventListener('controllerchange',changed);};
+  const changed=()=>{cleanup();resolve();};
+  const timer=setTimeout(()=>{cleanup();reject(new Error('A atualização demorou. Verifique a conexão e tente novamente.'));},15000);
+  navigator.serviceWorker.addEventListener('controllerchange',changed,{once:true});
+  worker.postMessage('ACTIVATE_UPDATE');
  });
+ location.reload();
 }

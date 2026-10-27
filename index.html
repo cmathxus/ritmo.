@@ -1,1 +1,23 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/><meta name="theme-color" content="#184b39"/><meta name="description" content="Seu diário de alimentação e movimento. Um dia de cada vez, juntos."/><title>Ritmo · Seu diário, no seu ritmo</title><link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg"/><link rel="manifest" href="%BASE_URL%manifest.webmanifest"/><link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png"/><meta name="apple-mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-title" content="ritmo."/><meta name="apple-mobile-web-app-status-bar-style" content="default"/></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/><meta name="theme-color" content="#184b39"/><meta name="description" content="Seu diário de alimentação e movimento. Um dia de cada vez, juntos."/><title>Ritmo · Seu diário, no seu ritmo</title><link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg"/><link rel="manifest" href="%BASE_URL%manifest.webmanifest"/><link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png"/><meta name="apple-mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-title" content="ritmo."/><meta name="apple-mobile-web-app-status-bar-style" content="default"/></head><body><div id="root"><p id="boot-label" style="font:16px system-ui;color:#315c40;padding:32px">Abrindo ritmo…</p></div>
+<section id="boot-recovery" hidden style="position:fixed;inset:0;z-index:9999;display:none;place-items:center;padding:28px;background:#f7f8f4;font-family:system-ui;color:#263d32"><div style="max-width:360px"><h1 style="font-size:26px">Vamos reabrir o ritmo.</h1><p style="line-height:1.7;color:#71816b">A nova versão não carregou por completo. Conecte-se à internet e toque abaixo para recuperar o app. Sua conta e seus registros serão preservados.</p><button id="boot-retry" style="background:#214e39;color:white;padding:16px 22px;border:0;border-radius:12px;font:inherit">Recuperar aplicativo</button><p id="boot-help" role="status" style="font-size:13px;line-height:1.6"></p></div></section>
+<script>
+(()=>{
+ const base='%BASE_URL%',prefix='ritmo-shell-'+encodeURIComponent(base)+'-';let ready=false;
+ const show=()=>{const panel=document.getElementById('boot-recovery');panel.hidden=false;panel.style.display='grid';};
+ window.addEventListener('ritmo-app-ready',()=>{ready=true;});
+ window.addEventListener('ritmo-boot-failed',show);
+ window.addEventListener('vite:preloadError',event=>{event.preventDefault();show();});
+ window.addEventListener('error',event=>{if(event.target&&event.target.tagName==='SCRIPT')show();},true);
+ setTimeout(()=>{if(!ready)show();},15000);
+ document.getElementById('boot-retry').addEventListener('click',async function(){
+  const help=document.getElementById('boot-help');if(!navigator.onLine){help.textContent='Conecte-se à internet antes de recuperar o app.';return;}
+  this.disabled=true;help.textContent='Recuperando a versão atual…';
+  try{
+   const scope=new URL(base,location.origin).href;
+   if('serviceWorker' in navigator){const registrations=await navigator.serviceWorker.getRegistrations();await Promise.all(registrations.filter(reg=>reg.scope===scope).map(reg=>reg.unregister()));}
+   if('caches' in window){const names=await caches.keys();await Promise.all(names.filter(name=>name.startsWith(prefix)).map(name=>caches.delete(name)));}
+   const next=new URL(location.href);next.searchParams.set('ritmo-recover',String(Date.now()));location.replace(next.href);
+  }catch{this.disabled=false;help.textContent='Não foi possível recuperar agora. Verifique a conexão e tente novamente.';}
+ });
+})();
+</script><script type="module" src="/src/main.tsx"></script></body></html>
