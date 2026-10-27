@@ -28,6 +28,6 @@ test('updates require explicit activation and cleanup stays within app scope',as
  let job;w.handlers.activate({waitUntil:p=>job=p});await job;assert.deepEqual(w.deleted,['ritmo-shell-%2Fritmo.%2F-old']);assert.equal(w.claimed,true);
 });
 test('manifest contains installable square PNG icons and relative scope',()=>{
- const manifest=JSON.parse(readFileSync(new URL('../public/manifest.webmanifest',import.meta.url),'utf8'));assert.equal(manifest.scope,'./');assert.equal(manifest.start_url,'./');assert.equal(manifest.display,'standalone');
+ const manifest=JSON.parse(readFileSync(new URL('../public/manifest.webmanifest',import.meta.url),'utf8'));assert.equal(manifest.name,'ritmo.');assert.equal(manifest.short_name,'ritmo.');assert.equal(manifest.scope,'./');assert.equal(manifest.start_url,'./');assert.equal(manifest.display,'standalone');
  for(const size of [192,512]){const icon=manifest.icons.find(i=>i.sizes===`${size}x${size}`);assert(icon);const bytes=readFileSync(new URL(`../public/${icon.src}`,import.meta.url));assert.equal(bytes.readUInt32BE(16),size);assert.equal(bytes.readUInt32BE(20),size);}
 });
