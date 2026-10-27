@@ -124,3 +124,9 @@ O site publicado permite instalação sem loja. Após um registro de refeição,
 O manifest e os ícones ficam em `public/`. O plugin `pwa-plugin.mjs` gera um service worker por build, respeitando `/ritmo./` no GitHub Pages. O cache contém apenas a interface pública e seus arquivos estáticos; não intercepta Supabase, fotos, APIs ou gravações. A abertura offline exibe a interface e um aviso; carregar/salvar registros e analisar fotos exige internet. Não existe fila de gravação offline.
 
 Atualizações ficam aguardando até a pessoa tocar em Atualizar ou fechar todas as janelas antigas. O botão de atualização fica oculto durante os formulários para evitar interromper registros. A cada retorno ao app ou reconexão, o navegador verifica novas versões. Desenvolvimento via `npm run dev` não registra service worker; para validar instalação use build/preview ou HTTPS publicado. Os testes de PWA verificam escopo, ícones, cache offline, isolamento de requisições privadas e ativação explícita.
+
+### Perguntas sobre calorias
+
+O menu **Pergunte à IA** e a barra inferior do celular abrem consultas textuais, por exemplo calorias de uma porção ou conversão de valores do rótulo. A mesma função `analyze-meal` aceita `mode: question`, valida a sessão e o tamanho da pergunta, usa a mesma `GEMINI_API_KEY` e compartilha os limites de fotos (20 consultas diárias por usuário). Não há gravação automática de refeições nem histórico persistente das perguntas. O modelo deve pedir marca/peso quando a embalagem não estiver definida, informar incerteza e restringir respostas ao tema. Não há busca na internet nem garantia de dados atuais de um fabricante.
+
+Após alterar o handler: `npx supabase functions deploy analyze-meal --project-ref xgjgzkssjifhkezvzevd --use-api`. Não coloque a chave Gemini no frontend.

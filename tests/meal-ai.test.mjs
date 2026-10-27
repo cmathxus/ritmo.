@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createHandler,validateEstimate} from '../supabase/functions/analyze-meal/index.ts';
+import {createHandler,validateEstimate,validateAnswer} from '../supabase/functions/analyze-meal/index.ts';
 
 const origin='https://ritmo-diario-dupla.fastdrake26.chatgpt.site';
 const image='data:image/jpeg;base64,/9j/'+('A'.repeat(100));
@@ -67,4 +67,21 @@ test('Gemini diferencia limite gratuito, chave inválida e indisponibilidade sem
 });
 test('OpenAI não é usado como fallback pago e chave antiga não ativa Gemini',async()=>{
  const {handler,calls}=setup({env:{GEMINI_API_KEY:'',OPENAI_API_KEY:'old-secret'}});const r=await handler(request());assert.equal(r.status,503);assert.equal(calls.length,1);
+});
+
+
+test('perguntas usam a mesma chave e quota, sem exigir nem enviar foto',async()=>{
+ const answer={is_food_question:true,answer:'Qual é a marca e o peso do pacote? O tamanho varia.',calories_min:null,calories_max:null,portion:''};
+ const {handler,calls}=setup({provider:{candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify(answer)}]}}]}});
+ const r=await handler(request({mode:'question',question:'Quantas calorias tem um pacote de bisnaguinha?',image:undefined}));assert.equal(r.status,200);const body=await r.json();assert.equal(body.calories_min,null);assert.equal(body.remaining,19);
+ const sent=JSON.parse(calls[2].init.body);assert.equal(calls[2].init.headers['x-goog-api-key'],'test-gemini');assert.equal(calls[1].url.includes('/rpc/reserve_meal_analysis'),true);assert.equal(sent.contents[0].parts.length,1);assert(!('inlineData' in sent.contents[0].parts[0]));assert.match(sent.systemInstruction.parts[0].text,/sem inventar/);
+});
+test('pergunta inválida é rejeitada antes de reservar quota',async()=>{
+ for(const question of ['', 'x', 'a'.repeat(501), null]){const {handler,calls}=setup();const r=await handler(request({mode:'question',question}));assert.equal(r.status,400);assert.equal(calls.length,1);}
+});
+test('resposta textual valida porção e faixa; recusa não cria calorias',()=>{
+ const valid={is_food_question:true,answer:'Estimativa para a porção informada.',calories_min:120,calories_max:160,portion:'1 pão de 50 g'};
+ assert.equal(validateAnswer(valid).calories_max,160);
+ for(const change of [{calories_max:100},{calories_min:-1},{calories_max:Infinity},{portion:''},{answer:'x'.repeat(1201)},{calories_min:null}])assert.throws(()=>validateAnswer({...valid,...change}));
+ assert.equal(validateAnswer({...valid,is_food_question:false}).calories_max,null);
 });

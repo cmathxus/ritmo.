@@ -1,0 +1,40 @@
+/* Mobile app chrome: reserve real viewport space for the camera action. */
+.camera-dock{display:none}
+@media(max-width:650px){
+ :root{--camera-dock-height:calc(76px + env(safe-area-inset-bottom,0px))}
+ .app-shell{min-height:100dvh;height:100dvh;overflow:hidden}
+ .app-shell main{height:calc(100dvh - var(--camera-dock-height));min-height:0;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+ .content{padding-bottom:20px}
+ .camera-dock{position:fixed;inset:auto 0 0;z-index:35;display:flex;align-items:center;justify-content:center;gap:16px;height:var(--camera-dock-height);padding:10px max(18px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));background:#fff;border-top:1px solid #e3e9dc}
+ .camera-dock .camera-fab{position:static;display:inline-flex;min-height:48px;padding:0 20px;border-radius:15px;box-shadow:none;font-size:13px;flex-shrink:0}
+ .camera-dock-hint{font-size:11px;color:#7b897e;line-height:1.5}
+ .topbar{gap:8px;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+ .topbar .icon-button{min-width:44px;min-height:44px}
+ .topbar>.icon-button:last-child{margin-left:0}
+ .topbar>.notification-root{margin-left:auto}
+ .breadcrumb{min-width:0;font-size:11px}
+ .breadcrumb strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .sidebar{width:min(292px,calc(100vw - 56px));padding:calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));height:100dvh;overflow-y:auto;overscroll-behavior:contain}
+ .sidebar-brand{gap:12px;flex-shrink:0}
+ .sidebar-brand .brand-image{width:180px;max-width:calc(100% - 56px);height:52px;flex:1 1 auto}
+ .sidebar-brand .brand-image img{width:210px;left:-17px;top:-6px}
+ .sidebar-close{width:44px;height:44px;padding:10px;flex:0 0 44px}
+ .sidebar .nav-label{margin-top:25px}
+ .sidebar-bottom{padding-top:24px}
+ .sidebar nav button,.sidebar-bottom>button{min-height:48px}
+ .notification-popover{top:calc(65px + env(safe-area-inset-top));max-height:calc(100dvh - 90px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+ .overlay{padding:max(13px,env(safe-area-inset-top)) max(13px,env(safe-area-inset-right)) max(13px,env(safe-area-inset-bottom)) max(13px,env(safe-area-inset-left))}
+ .dialog{max-height:calc(100dvh - 26px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+ input,select,textarea,.form-row input,.form-row select{font-size:16px}
+ .pwa-install,.pwa-banner{bottom:calc(var(--camera-dock-height) + 12px)}
+ .toast{bottom:calc(var(--camera-dock-height) + 12px)}
+}
+@media(max-width:360px){.camera-dock-hint{font-size:10px}.camera-dock{gap:10px}.sidebar-brand .brand-image img{width:180px;left:-15px;top:-2px}}
+@media(max-width:650px){
+ .app-shell:has(.overlay) main,.app-shell:has(.sidebar.open) main{overflow:hidden}
+ .sidebar-brand .brand-image img{width:calc(100% + 30px);left:-15px;top:-4px}
+ .camera-dock .camera-fab{padding:0 14px}
+ .camera-dock .calorie-help{font-size:12px;line-height:1.4;min-height:44px;padding:8px;max-width:145px;text-align:left}
+ .camera-dock .calorie-help svg{flex-shrink:0}
+}
+@media(max-width:360px){.camera-dock .calorie-help{font-size:11px;max-width:130px}}
