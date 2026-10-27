@@ -1,8 +1,8 @@
-export const goalLabels={deficit:'Déficit',maintenance:'Manutenção',surplus:'Superávit'};
+export const goalLabels={deficit:'Emagrecer',maintenance:'Manter o peso',surplus:'Ganhar peso'};
 export function balanceState(balance,hasMeals){
  if(!hasMeals)return {key:'empty',label:'Aguardando refeições',detail:'Seu balanço aparece conforme você registra o que comeu.'};
- if(Math.abs(balance)<=100)return {key:'maintenance',label:'Manutenção estimada',detail:'Consumo próximo do gasto estimado (faixa de ±100 kcal).'};
- return balance<0?{key:'deficit',label:'Déficit estimado',detail:'Você registrou menos calorias do que o gasto estimado.'}:{key:'surplus',label:'Superávit estimado',detail:'Você registrou mais calorias do que o gasto estimado.'};
+ if(Math.abs(balance)<=100)return {key:'maintenance',label:'Consumo perto do gasto',detail:'Isso é manutenção: as calorias registradas estão próximas do gasto diário estimado.'};
+ return balance<0?{key:'deficit',label:'Consumo abaixo do gasto',detail:'Isso é déficit calórico: você registrou menos calorias nas refeições do que o gasto diário estimado.'}:{key:'surplus',label:'Consumo acima do gasto',detail:'Isso é superávit calórico: você registrou mais calorias nas refeições do que o gasto diário estimado.'};
 }
 export function localMealTime(now=new Date()){return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;}
 export function validMealTime(time,date,today,now=localMealTime()){
