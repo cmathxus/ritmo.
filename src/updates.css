@@ -18,3 +18,13 @@
 .summary-primary>.balance-card{height:auto;align-self:start}
 .summary-primary>.progress-overview{grid-template-columns:1fr;margin:0}
 @media(max-width:650px){.summary-primary{gap:17px}}
+/* Independent dashboard columns prevent one column's height delaying the next. */
+.diary-layout{display:grid;grid-template-columns:minmax(0,1.49fr) minmax(0,1fr);gap:22px;align-items:start}
+.diary-primary,.diary-secondary{display:grid;gap:22px;align-content:start;min-width:0}
+.diary-primary>.balance-card{align-self:start;height:auto}
+.diary-primary>.progress-overview{grid-template-columns:1fr;margin:0}
+.diary-secondary>.right-column{grid-template-columns:1fr;gap:22px}
+@media(min-width:1600px){.diary-layout,.diary-primary,.diary-secondary,.diary-secondary>.right-column{gap:26px}}
+@media(max-width:1100px){.diary-layout{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}.diary-primary,.diary-secondary,.diary-secondary>.right-column{gap:16px}}
+@media(max-width:850px){.diary-layout{grid-template-columns:1fr}}
+@media(max-width:650px){.diary-layout,.diary-primary,.diary-secondary,.diary-secondary>.right-column{gap:17px}}
