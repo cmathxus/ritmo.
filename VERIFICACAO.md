@@ -25,3 +25,5 @@ Limite: envio/recebimento de e-mail, URL de confirmação e recuperação depend
 - PGlite: quota protegida e transacional; 20/dia por usuário, 100 global, cooldown e idempotência. Perfil metabólico com RLS exclusiva do dono, RPC com recálculo, validação e modo manual.
 - Migrações aplicadas no Supabase com TLS e CA verificada. Bases antigas preservadas como manuais; nenhuma antropometria inventada.
 - Build TypeScript/Vite aprovado. UI local: confirmação de saída/cancelar; opção por foto; TMB 75kg, 175cm, 28anos masculino moderado = 1778 basal / 2400 diária; salvamento em demonstração.
+
+- Teste real autenticado com conta temporária: GET da função retornou disponível; OpenAI recusou a análise com HTTP 429 (AI_RATE_LIMIT). Não houve resultado nutricional real validado. Conta temporária removida, sem gravar refeições. Tratamento de erro e registro manual disponíveis.

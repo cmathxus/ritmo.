@@ -74,6 +74,9 @@ export function createHandler({getEnv,fetcher=fetch}:{getEnv:Environment;fetcher
       if(!aiResponse.ok){
         const failure=await aiResponse.json().catch(()=>({}));
         if(failure.error?.code==='insufficient_quota')return json(503,{error:'AI_BILLING_REQUIRED'});
+        if(aiResponse.status===401)return json(503,{error:'AI_KEY_INVALID'});
+        if(aiResponse.status===403)return json(503,{error:'AI_ACCESS_DENIED'});
+        if(aiResponse.status===429)return json(503,{error:'AI_RATE_LIMIT'});
         return json(aiResponse.status===429||aiResponse.status===401||aiResponse.status===403?503:502,{error:'AI_UNAVAILABLE'});
       }
       const result=await aiResponse.json();if(result.status!=='completed')return json(502,{error:'AI_INCOMPLETE'});

@@ -21,6 +21,9 @@ const errors:Record<string,string>={
   AI_TIMEOUT:'A análise demorou mais que o esperado. Tente novamente em alguns instantes.',
   AI_UNAVAILABLE:'A análise está indisponível agora. Tente novamente mais tarde ou registre manualmente.',
   AI_BILLING_REQUIRED:'O serviço de IA está sem saldo para analisar fotos. O registro manual continua disponível.',
+  AI_KEY_INVALID:'A chave do serviço de IA precisa ser corrigida pelo responsável do app. O registro manual continua disponível.',
+  AI_ACCESS_DENIED:'O serviço de IA não autorizou a análise. O registro manual continua disponível.',
+  AI_RATE_LIMIT:'O serviço de IA está recebendo muitas solicitações. Aguarde um pouco e tente novamente.',
   AI_INCOMPLETE:'Não consegui terminar a análise. Tente uma foto mais nítida.',
   INVALID_AI_RESPONSE:'Não consegui montar uma estimativa confiável. Tente outra foto ou registre manualmente.',
 };
