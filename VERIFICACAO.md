@@ -27,3 +27,8 @@ Limite: envio/recebimento de e-mail, URL de confirmação e recuperação depend
 - Build TypeScript/Vite aprovado. UI local: confirmação de saída/cancelar; opção por foto; TMB 75kg, 175cm, 28anos masculino moderado = 1778 basal / 2400 diária; salvamento em demonstração.
 
 - Teste real autenticado com conta temporária: GET da função retornou disponível; OpenAI recusou a análise com HTTP 429 (AI_RATE_LIMIT). Não houve resultado nutricional real validado. Conta temporária removida, sem gravar refeições. Tratamento de erro e registro manual disponíveis.
+
+## Correção do primeiro acesso
+25 testes aprovados, incluindo novas contas, base manual importada, conclusão explícita e troca de conta. Teste PGlite confirma persistência da conclusão via RPC. Migração adiciona sinalizador sem alterar a base ou o histórico. Diagnóstico de 429 agora distingue saldo, orçamento e frequência conforme documentação atual da OpenAI.
+
+- Teste de navegador com cadastro real temporário no Supabase: primeiro acesso exibiu formulário automaticamente, cálculo 1778/2400 confirmado; integração migrada para Gemini 3.5 Flash-Lite, com chave server-side, foto inline, schema e limite sem fallback OpenAI. 26 testes aprovados. Ativação e inferência real aguardam GEMINI_API_KEY.

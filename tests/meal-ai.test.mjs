@@ -5,7 +5,7 @@ import {createHandler,validateEstimate} from '../supabase/functions/analyze-meal
 const origin='https://ritmo-diario-dupla.fastdrake26.chatgpt.site';
 const image='data:image/jpeg;base64,/9j/'+('A'.repeat(100));
 const requestId='00000000-0000-4000-8000-000000000001';
-const env={SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'test-public',SUPABASE_SERVICE_ROLE_KEY:'test-service',OPENAI_API_KEY:'test-openai'};
+const env={SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'test-public',SUPABASE_SERVICE_ROLE_KEY:'test-service',GEMINI_API_KEY:'test-gemini'};
 const valid={is_food:true,title:'Arroz com frango',notes:'Porções aproximadas pela foto.',items:[{name:'Arroz',portion:'3 colheres',calories:150},{name:'Frango',portion:'1 filé',calories:250}]};
 const response=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
 function setup(options={}){
@@ -15,7 +15,7 @@ function setup(options={}){
     if(url.endsWith('/auth/v1/user'))return response({id:'verified-user'},options.authStatus||200);
     if(url.includes('/rpc/'))return response(options.quota||{allowed:true,remaining:19},options.quotaStatus||200);
     if(options.providerThrow)throw new DOMException('Timed out','TimeoutError');
-    return response(options.provider||{status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(valid)}]}]},options.providerStatus||200);
+    return response(options.provider||{candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify(valid)}]}}]},options.providerStatus||200);
   }});
   return {calls,handler};
 }
@@ -29,10 +29,10 @@ test('preflight não cobra, não autentica e recusa origens não autorizadas',as
   assert.equal((await handler(request({},{Origin:'https://untrusted.example'}))).status,403);assert.equal(calls.length,0);
 });
 test('sem chave retorna indisponível e não consome limite',async()=>{
-  const {handler,calls}=setup({env:{OPENAI_API_KEY:''}});const r=await handler(request());assert.equal(r.status,503);assert.equal((await r.json()).error,'AI_NOT_CONFIGURED');assert.equal(calls.length,1);
+  const {handler,calls}=setup({env:{GEMINI_API_KEY:''}});const r=await handler(request());assert.equal(r.status,503);assert.equal((await r.json()).error,'AI_NOT_CONFIGURED');assert.equal(calls.length,1);
 });
 test('status autenticado não analisa nem consome limite',async()=>{
-  const {handler,calls}=setup();const r=await handler(new Request('https://example.test',{headers:{Origin:origin,Authorization:'Bearer user-session'}}));assert.deepEqual(await r.json(),{available:true,daily_limit:20});assert.equal(calls.length,1);
+  const {handler,calls}=setup();const r=await handler(new Request('https://example.test',{headers:{Origin:origin,Authorization:'Bearer user-session'}}));assert.deepEqual(await r.json(),{available:true,daily_limit:20,provider:'gemini'});assert.equal(calls.length,1);
 });
 test('rejeita imagem remota, payload excessivo e contexto fora do limite antes da quota',async()=>{
   for(const body of [{image:'https://example.test/photo.jpg'},{context:'x'.repeat(501)},{request_id:'invalid'},{image:'data:image/jpeg;base64,AAAA'}]){
@@ -43,20 +43,28 @@ test('rejeita imagem remota, payload excessivo e contexto fora do limite antes d
 test('limite diário bloqueia IA; só usa identidade validada pelo servidor',async()=>{
   const {handler,calls}=setup({quota:{allowed:false,reason:'daily_limit'}});const r=await handler(request({user_id:'forged-user'}));assert.equal(r.status,429);assert.equal(calls.length,2);assert.equal(JSON.parse(calls[1].init.body).p_user_id,'verified-user');
 });
-test('estrutura a resposta, calcula total e não pede armazenamento na OpenAI',async()=>{
+test('estrutura a resposta, calcula total e envia imagem inline ao Gemini com schema e chave só no servidor',async()=>{
   const {handler,calls}=setup();const r=await handler(request());const d=await r.json();assert.equal(r.status,200);assert.equal(d.total_calories,400);assert.equal(d.remaining,19);
-  const sent=JSON.parse(calls[2].init.body);assert.equal(sent.store,false);assert.equal(sent.text.format.strict,true);assert.equal(sent.input[0].content[1].image_url,image);assert.equal(calls[2].init.headers.Authorization,'Bearer test-openai');assert.equal(JSON.stringify(d).includes('test-openai'),false);
+  const sent=JSON.parse(calls[2].init.body);assert.equal(sent.store,false);assert.deepEqual(sent.generationConfig.responseJsonSchema.required,['is_food','title','items','notes']);assert.equal(sent.contents[0].parts[0].inlineData.data,image.split(',')[1]);assert.equal(calls[2].init.headers['x-goog-api-key'],'test-gemini');assert.equal(calls[2].url.includes('api.openai.com'),false);assert.equal(JSON.stringify(d).includes('test-gemini'),false);
 });
 test('foto sem alimento e recusa nunca produzem refeição inventada',async()=>{
-  const {handler}=setup({provider:{status:'completed',output:[{content:[{type:'output_text',text:JSON.stringify({is_food:false,title:'',items:[],notes:'Foto sem comida.'})}]}]}});const r=await handler(request());assert.equal(r.status,422);assert.equal((await r.json()).error,'NO_FOOD');
-  const refusal=setup({provider:{status:'completed',output:[{content:[{type:'refusal',refusal:'Cannot help'}]}]}});assert.equal((await refusal.handler(request())).status,422);
+  const {handler}=setup({provider:{candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify({is_food:false,title:'',items:[],notes:'Foto sem comida.'})}]}}]}});const r=await handler(request());assert.equal(r.status,422);assert.equal((await r.json()).error,'NO_FOOD');
+  const refusal=setup({provider:{promptFeedback:{blockReason:'SAFETY'}}});assert.equal((await refusal.handler(request())).status,422);
 });
 test('valores inválidos ou absurdos são rejeitados',()=>{
   for(const calories of [-1,NaN,Infinity,1.5,20001])assert.throws(()=>validateEstimate({...valid,items:[{name:'Food',portion:'1 porção',calories}]}));
   assert.throws(()=>validateEstimate({...valid,items:[]}));assert.throws(()=>validateEstimate({...valid,title:''}));
 });
 test('falha do provedor, resposta incompleta e timeout viram mensagens controladas',async()=>{
-  for(const options of [{providerStatus:401},{provider:{status:'incomplete',output:[]}},{providerThrow:true},{provider:{status:'completed',output:[{content:[{type:'output_text',text:'not json'}]}]}}]){
-    const {handler}=setup(options);const r=await handler(request());assert.ok([502,503,504].includes(r.status));assert.equal(JSON.stringify(await r.json()).includes('test-openai'),false);
+  for(const options of [{providerStatus:401},{provider:{candidates:[{finishReason:'MAX_TOKENS',content:{parts:[]}}]}},{providerThrow:true},{provider:{candidates:[{finishReason:'STOP',content:{parts:[{text:'not json'}]}}]}}]){
+    const {handler}=setup(options);const r=await handler(request());assert.ok([502,503,504].includes(r.status));assert.equal(JSON.stringify(await r.json()).includes('test-gemini'),false);
   }
+});
+test('Gemini diferencia limite gratuito, chave inválida e indisponibilidade sem expor dados do provedor',async()=>{
+ for(const [providerStatus,provider,expected] of [[429,{error:{status:'RESOURCE_EXHAUSTED'}},'AI_RATE_LIMIT'],[400,{error:{status:'FAILED_PRECONDITION'}},'AI_FREE_TIER_UNAVAILABLE'],[400,{error:{details:[{reason:'API_KEY_INVALID'}]}},'AI_KEY_INVALID'],[403,{error:{}},'AI_ACCESS_DENIED'],[404,{error:{}},'AI_MODEL_UNAVAILABLE']]){
+  const {handler}=setup({providerStatus,provider});const r=await handler(request());assert.equal(r.status,503);assert.deepEqual(await r.json(),{error:expected});
+ }
+});
+test('OpenAI não é usado como fallback pago e chave antiga não ativa Gemini',async()=>{
+ const {handler,calls}=setup({env:{GEMINI_API_KEY:'',OPENAI_API_KEY:'old-secret'}});const r=await handler(request());assert.equal(r.status,503);assert.equal(calls.length,1);
 });

@@ -23,7 +23,10 @@ const errors:Record<string,string>={
   AI_BILLING_REQUIRED:'O serviço de IA está sem saldo para analisar fotos. O registro manual continua disponível.',
   AI_KEY_INVALID:'A chave do serviço de IA precisa ser corrigida pelo responsável do app. O registro manual continua disponível.',
   AI_ACCESS_DENIED:'O serviço de IA não autorizou a análise. O registro manual continua disponível.',
-  AI_RATE_LIMIT:'O serviço de IA está recebendo muitas solicitações. Aguarde um pouco e tente novamente.',
+  AI_RATE_LIMIT:'A cota do Gemini foi atingida. Tente mais tarde; se for o limite diário, aguarde a renovação. Você ainda pode preencher manualmente.',
+  AI_FREE_TIER_UNAVAILABLE:'A cota gratuita do Gemini não está disponível para este projeto ou região. O responsável pelo app precisa verificar o Google AI Studio.',
+  AI_MODEL_UNAVAILABLE:'O modelo de IA está indisponível para este projeto. Você ainda pode preencher manualmente.',
+  AI_SPEND_LIMIT:'O projeto de IA atingiu seu limite de gastos ou uso. O responsável pelo app precisa verificar o painel da API.',
   AI_INCOMPLETE:'Não consegui terminar a análise. Tente uma foto mais nítida.',
   INVALID_AI_RESPONSE:'Não consegui montar uma estimativa confiável. Tente outra foto ou registre manualmente.',
 };
@@ -84,7 +87,7 @@ export default function PhotoMeal({onAccept,onManual}:{onAccept:(draft:MealDraft
     </div><div className="photo-source-buttons"><button type="button" className="secondary" disabled={preparing||analyzing} onClick={()=>camera.current?.click()}><Camera size={16}/>Tirar foto</button><button type="button" className="secondary" disabled={preparing||analyzing} onClick={()=>gallery.current?.click()}><ImagePlus size={16}/>{blob?'Trocar imagem':'Escolher imagem'}</button></div>
     <label>Algo que a foto não mostra? <span className="optional">opcional</span><textarea rows={2} maxLength={500} placeholder="Ex.: frango grelhado, 3 colheres de arroz, sem molho…" value={context} disabled={analyzing} onChange={e=>setContext(e.target.value)}/></label>
     {available===false&&<div className="notice photo-unavailable"><span>A análise por foto ainda não está disponível. O registro manual continua funcionando.</span><button type="button" className="text-button" disabled={checking} onClick={checkAvailability}>{checking?'Verificando…':'Verificar de novo'}</button></div>}
-    <p className="photo-privacy"><Leaf size={14}/><span>Ao analisar, a foto será enviada à OpenAI. Não guardamos a imagem no Ritmo. Até 20 análises por conta por dia.</span></p>
+    <p className="photo-privacy"><Leaf size={14}/><span>Ao analisar, a foto e o contexto serão enviados ao Google Gemini. Na cota gratuita, o Google pode usá-los para melhorar seus produtos. Envie só o prato, sem dados pessoais. Não guardamos a imagem no Ritmo. Até 20 análises por conta por dia, sujeitas à cota do Gemini.</span></p>
     </>}
     {result&&<><div className="photo-result-heading"><span><Sparkles size={18}/></span><div><h3>Seu prato, em uma estimativa.</h3><p>Confira as porções e ajuste o que precisar.</p></div><Check size={20}/></div><label>Nome da refeição<input ref={resultTitle} value={result.title} maxLength={120} onChange={e=>setResult({...result,title:e.target.value})}/></label>
     <div className="photo-ingredients">{result.items.map((item,index)=><div className="photo-ingredient" key={index}><div><strong>{item.name}</strong><input aria-label={`Porção de ${item.name}`} value={item.portion} maxLength={100} onChange={e=>setResult({...result,items:result.items.map((i,j)=>j===index?{...i,portion:e.target.value}:i)})}/></div><label><span className="sr-only">Calorias de {item.name}</span><input type="number" min="0" max="10000" step="1" value={item.calories} onChange={e=>setResult({...result,items:result.items.map((i,j)=>j===index?{...i,calories:Math.max(0,Math.min(10000,Math.round(Number(e.target.value))))}:i)})}/><small>kcal</small></label><button type="button" className="icon-button" aria-label={`Remover ${item.name} da sugestão`} onClick={()=>setResult({...result,items:result.items.filter((_,j)=>j!==index)})}><Trash2 size={15}/></button></div>)}</div>

@@ -53,8 +53,8 @@ export function createHandler({getEnv,fetcher=fetch}:{getEnv:Environment;fetcher
       const userResponse=await fetcher(`${url}/auth/v1/user`,{headers:{apikey:anon,Authorization:auth},signal:AbortSignal.timeout(7000)});
       if(!userResponse.ok)return json(401,{error:'AUTH_REQUIRED'});
       const user=await userResponse.json();if(!user.id)return json(401,{error:'AUTH_REQUIRED'});
-      const apiKey=getEnv('OPENAI_API_KEY');const service=getEnv('SUPABASE_SERVICE_ROLE_KEY');
-      if(request.method==='GET')return json(200,{available:!!apiKey&&!!service,daily_limit:20});
+      const apiKey=getEnv('GEMINI_API_KEY');const service=getEnv('SUPABASE_SERVICE_ROLE_KEY');
+      if(request.method==='GET')return json(200,{available:!!apiKey&&!!service,daily_limit:20,provider:'gemini'});
       if(!apiKey||!service)return json(503,{error:'AI_NOT_CONFIGURED'});
       if(!request.headers.get('content-type')?.includes('application/json'))return json(415,{error:'INVALID_REQUEST'});
       const body=await readBody(request);
@@ -66,23 +66,27 @@ export function createHandler({getEnv,fetcher=fetch}:{getEnv:Environment;fetcher
       if(!quotaResponse.ok)return json(503,{error:'AI_SETUP_REQUIRED'});
       const quota=await quotaResponse.json();
       if(!quota.allowed){const reason=String(quota.reason||'daily_limit').toUpperCase();return json(reason==='DUPLICATE_REQUEST'?409:429,{error:reason},{'Retry-After':reason==='COOLDOWN'?'15':'3600'});}
-      const aiResponse=await fetcher('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(35000),body:JSON.stringify({
-        model:getEnv('OPENAI_MODEL')||'gpt-4.1-mini',store:false,max_output_tokens:1800,instructions,
-        input:[{role:'user',content:[{type:'input_text',text:context?`Contexto informado pelo usuário (descrição da refeição): ${context}`:'Estime os alimentos visíveis nesta foto.'},{type:'input_image',image_url:body.image,detail:'auto'}]}],
-        text:{format:{type:'json_schema',name:'meal_estimate',strict:true,schema}},
+      const model=getEnv('GEMINI_MODEL')||'gemini-3.5-flash-lite';
+      if(!/^gemini-[a-z0-9.-]+$/.test(model))return json(503,{error:'AI_SETUP_REQUIRED'});
+      const aiResponse=await fetcher(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{method:'POST',headers:{'x-goog-api-key':apiKey,'Content-Type':'application/json'},signal:AbortSignal.timeout(35000),body:JSON.stringify({
+        store:false,systemInstruction:{parts:[{text:instructions}]},
+        contents:[{role:'user',parts:[{inlineData:{mimeType:'image/jpeg',data:encoded}},{text:context?`Contexto informado pelo usuário (descrição da refeição): ${context}`:'Estime os alimentos visíveis nesta foto.'}]}],
+        generationConfig:{maxOutputTokens:4096,responseMimeType:'application/json',responseJsonSchema:schema},
       })});
       if(!aiResponse.ok){
         const failure=await aiResponse.json().catch(()=>({}));
-        if(failure.error?.code==='insufficient_quota')return json(503,{error:'AI_BILLING_REQUIRED'});
-        if(aiResponse.status===401)return json(503,{error:'AI_KEY_INVALID'});
+        const reasons=(failure.error?.details||[]).map((d:{reason?:string})=>d.reason);
+        if(aiResponse.status===401||reasons.includes('API_KEY_INVALID'))return json(503,{error:'AI_KEY_INVALID'});
         if(aiResponse.status===403)return json(503,{error:'AI_ACCESS_DENIED'});
         if(aiResponse.status===429)return json(503,{error:'AI_RATE_LIMIT'});
-        return json(aiResponse.status===429||aiResponse.status===401||aiResponse.status===403?503:502,{error:'AI_UNAVAILABLE'});
+        if(failure.error?.status==='FAILED_PRECONDITION')return json(503,{error:'AI_FREE_TIER_UNAVAILABLE'});
+        if(aiResponse.status===404)return json(503,{error:'AI_MODEL_UNAVAILABLE'});
+        return json(502,{error:'AI_UNAVAILABLE'});
       }
-      const result=await aiResponse.json();if(result.status!=='completed')return json(502,{error:'AI_INCOMPLETE'});
-      const content=(result.output||[]).flatMap((item:{content?:{type:string;text?:string}[]})=>item.content||[]);
-      if(content.some((c:{type:string})=>c.type==='refusal'))return json(422,{error:'PHOTO_UNCLEAR'});
-      const output=content.filter((c:{type:string})=>c.type==='output_text').map((c:{text?:string})=>c.text||'').join('');
+      const result=await aiResponse.json();const candidate=result.candidates?.[0];
+      if(result.promptFeedback?.blockReason||candidate&&['SAFETY','BLOCKLIST','PROHIBITED_CONTENT','RECITATION'].includes(candidate.finishReason))return json(422,{error:'PHOTO_UNCLEAR'});
+      if(candidate?.finishReason!=='STOP')return json(502,{error:'AI_INCOMPLETE'});
+      const output=(candidate.content?.parts||[]).filter((p:{thought?:boolean;text?:string})=>!p.thought&&typeof p.text==='string').map((p:{text:string})=>p.text).join('');
       let parsed;try{parsed=JSON.parse(output);}catch{return json(502,{error:'INVALID_AI_RESPONSE'});}
       const estimate=validateEstimate(parsed);
       if(!estimate.is_food)return json(422,{error:'NO_FOOD',message:estimate.notes.slice(0,600),remaining:quota.remaining});
