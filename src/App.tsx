@@ -23,7 +23,7 @@ const shortDate=(d:string)=>new Date(`${d}T12:00:00`).toLocaleDateString('pt-BR'
 const empty:Data={profiles:[],meals:[],days:[]};
 type Page='diary'|'history'|'duo'|'settings';
 type Modal={type:'meal';meal?:Meal;draft?:MealDraft}|{type:'activity'}|{type:'auth'}|{type:'goal'}|{type:'account'}|{type:'logout'}|{type:'photo';file?:File}|{type:'metabolism'}|null;
-function Logo(){return <div className="brand"><span className="brand-mark"><Activity size={25} strokeWidth={2.8}/></span>ritmo<span className="brand-dot">.</span></div>}
+function Logo(){return <div className="brand brand-image"><img src={`${import.meta.env.BASE_URL}ritmo-logo.png`} alt="Ritmo" width={2172} height={724}/></div>}
 
 function Dialog({title,children,onClose}:{title:string;children:ReactNode;onClose:()=>void}) {
   const ref=useRef<HTMLDivElement>(null);const closeRef=useRef(onClose);closeRef.current=onClose;
