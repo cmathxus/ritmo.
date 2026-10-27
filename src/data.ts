@@ -3,7 +3,7 @@ import { dateKey, moveDate } from './domain.mjs';
 export type Profile = {id:string; name:string; username?:string; base_calories:number};
 export type Meal = {id:string; user_id:string; date:string; name:string; calories:number; category:string; description?:string; meal_time?:string|null; created_at:string};
 export type Day = {user_id:string; date:string; base_calories:number; extra_calories:number; activity:string};
-export type MetabolicProfile={goal?:'deficit'|'maintenance'|'surplus';method?:'unimed'|'pal';pal?:number|null;onboarding_completed?:boolean;user_id?:string;mode:'calculator'|'manual';sex:string|null;weight:number|null;height:number|null;age:number|null;activity:string|null;basal_calories:number|null;daily_calories:number};
+export type MetabolicProfile={goal_selected?:boolean;goal?:'deficit'|'maintenance'|'surplus';method?:'unimed'|'pal';pal?:number|null;onboarding_completed?:boolean;user_id?:string;mode:'calculator'|'manual';sex:string|null;weight:number|null;height:number|null;age:number|null;activity:string|null;basal_calories:number|null;daily_calories:number};
 export type Data = {profiles:Profile[]; meals:Meal[]; days:Day[];metabolic?:MetabolicProfile|null};
 const url=import.meta.env.VITE_SUPABASE_URL, key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export let supabase:SupabaseClient|null=null;

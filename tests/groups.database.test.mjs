@@ -37,5 +37,10 @@ await as(14);assert.equal((await db.query('select respond_group_notification($1,
 await as(1);await db.query('select invite_group_username($1,$2)',[gid,'u_'+ids[14].replaceAll('-','').slice(-20)]);
 await as(14);const pending=(await db.query("select id from group_notifications where status='pending'")).rows[0].id;assert.equal((await db.query('select respond_group_notification($1,true) as r',[pending])).rows[0].r.accepted,true);assert.equal((await db.query('select * from groups')).rows.length,1);
 await assert.rejects(()=>db.query("select set_username('admin_test')"));await assert.rejects(()=>db.query("select set_username('A bad name')"));
+await db.exec('reset role;');await db.exec(readFileSync(new URL('supabase/migrations/20261027_explicit_goal.sql',root),'utf8'));
+await as(2);assert.equal((await db.query('select goal_selected from metabolic_profiles')).rows[0].goal_selected,false);
+const beforeBase=(await db.query('select base_calories from profiles where id=$1',[ids[2]])).rows[0].base_calories;
+await db.query("select set_personal_goal('deficit')");const selectedGoal=(await db.query('select goal,goal_selected from metabolic_profiles')).rows[0];assert.equal(selectedGoal.goal,'deficit');assert.equal(selectedGoal.goal_selected,true);assert.equal((await db.query('select base_calories from profiles where id=$1',[ids[2]])).rows[0].base_calories,beforeBase);
+await assert.rejects(()=>db.query("select set_personal_goal('invalid')"));
 await db.exec('reset role;set role anon;');await assert.rejects(()=>db.query('select * from groups'));await assert.rejects(()=>db.query("select create_group('Anonymous')"));
 console.log('PASS: legacy pair migration, deterministic admin, revocation, RLS, private metabolism/goal, capacity 10, hashed/rotated invites, rate limit on failed attempts, transfer/leave/archive and anon denial.');await db.close();
