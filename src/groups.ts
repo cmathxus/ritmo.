@@ -9,14 +9,14 @@ export async function groupRpc<T=unknown>(name:string,args:Record<string,unknown
 }
 export function groupError(e:unknown){
  const m=e instanceof Error?e.message:String((e as {message?:string})?.message||'');
- for(const [key,text] of Object.entries({already_grouped:'Você já está em um grupo. Saia dele antes de entrar em outro.',group_full:'Este grupo já tem 10 pessoas.',invalid_group_invite:'Convite inválido, vencido ou substituído. Peça um novo link ao administrador.',invite_rate_limit:'Muitas tentativas de convite. Aguarde um minuto.',group_admin_required:'Só o administrador atual pode fazer isso.',group_member_required:'Você já não participa deste grupo.',transfer_admin_first:'Transfira a administração para outro membro antes de sair.',invalid_group_name:'Use um nome de 2 a 40 caracteres.',member_missing:'Este membro já não está no grupo.'}))if(m.includes(key))return text;
- return friendlyError(e);
+ for(const [key,text] of Object.entries({username_not_found:'Não encontramos esse @usuário. Confira com seu amigo.',invite_self:'Você já administra este grupo.',recipient_grouped:'Essa pessoa já participa de um grupo.',invite_pending:'Já existe um convite pendente para essa pessoa.',invite_missing:'Este convite expirou ou já foi respondido.',invalid_username:'Use de 3 a 24 letras minúsculas, números ou sublinhado.',already_grouped:'Você já está em um grupo. Saia dele antes de entrar em outro.',group_full:'Este grupo já tem 10 pessoas.',invalid_group_invite:'Convite inválido, vencido ou substituído. Peça um novo link ao administrador.',invite_rate_limit:'Muitas tentativas de convite. Aguarde um minuto.',group_admin_required:'Só o administrador atual pode fazer isso.',group_member_required:'Você já não participa deste grupo.',transfer_admin_first:'Transfira a administração para outro membro antes de sair.',invalid_group_name:'Use um nome de 2 a 40 caracteres.',member_missing:'Este membro já não está no grupo.'}))if(m.includes(key))return text;
+ if(/duplicate key|unique constraint/i.test(m))return 'Esse nome de usuário já está em uso.';return friendlyError(e);
 }
 export async function loadGroup():Promise<GroupData>{
  if(!supabase)return {group:null,members:[]};
  const {data:groups,error}=await supabase.from('groups').select('id,name,created_by,migrated').is('archived_at',null).maybeSingle();if(error)throw error;
  if(!groups)return {group:null,members:[]};
- const [members,profiles]=await Promise.all([supabase.from('group_members').select('group_id,user_id,role,joined_at').eq('group_id',groups.id),supabase.from('profiles').select('id,name,base_calories')]);
+ const [members,profiles]=await Promise.all([supabase.from('group_members').select('group_id,user_id,role,joined_at').eq('group_id',groups.id),supabase.from('profiles').select('id,name,username,base_calories')]);
  if(members.error)throw members.error;if(profiles.error)throw profiles.error;
  return {group:groups,members:(members.data||[]).map(m=>({...m,profile:profiles.data!.find(p=>p.id===m.user_id)!})).filter(m=>m.profile)};
 }

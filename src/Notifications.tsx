@@ -1,0 +1,12 @@
+import {useEffect,useState} from 'react';
+import {Bell,X} from 'lucide-react';
+import {supabase} from './data';
+import {groupRpc,groupError} from './groups';
+type Notice={id:string;group_name:string;sender_name:string;status:string;expires_at:string};
+export default function Notifications({uid,revision,onChanged}:{uid:string;revision:number;onChanged:()=>void}){
+ const [open,setOpen]=useState(false);const [rows,setRows]=useState<Notice[]>([]);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
+ useEffect(()=>{let active=true;if(!supabase)return;supabase.from('group_notifications').select('id,group_name,sender_name,status,expires_at').eq('recipient_id',uid).order('created_at',{ascending:false}).limit(30).then(({data,error})=>{if(active){if(error)setError(groupError(error));else setRows(data||[]);}});return()=>{active=false;};},[uid,revision]);
+ const pending=rows.filter(r=>r.status==='pending'&&new Date(r.expires_at)>new Date());
+ async function respond(id:string,accept:boolean){setBusy(true);setError('');try{await groupRpc('respond_group_notification',{p_id:id,p_accept:accept});setRows(rs=>rs.map(r=>r.id===id?{...r,status:accept?'accepted':'declined'}:r));onChanged();}catch(e){setError(groupError(e));}finally{setBusy(false);}}
+ return <div className="notification-root"><button className="icon-button" aria-label={`Notificações${pending.length?`, ${pending.length} pendentes`:''}`} aria-expanded={open} onClick={()=>setOpen(!open)}><Bell size={19}/>{pending.length>0&&<span className="notification-count">{pending.length}</span>}</button>{open&&<section className="notification-popover" aria-label="Central de notificações"><header><h3>Notificações</h3><button className="icon-button" aria-label="Fechar notificações" onClick={()=>setOpen(false)}><X size={17}/></button></header>{error&&<p role="alert" className="error">{error}</p>}{!pending.length&&<p>Nenhum convite pendente por aqui.</p>}{pending.map(r=><article key={r.id}><strong>{r.sender_name} convidou você para {r.group_name}</strong><p>Ao aceitar, os membros poderão ver suas refeições, observações, atividades e histórico. Seus dados de TMB e objetivo continuam privados.</p><small>Válido até {new Date(r.expires_at).toLocaleDateString('pt-BR')}</small><div className="group-actions"><button className="secondary" disabled={busy} onClick={()=>respond(r.id,false)}>Recusar</button><button className="primary" disabled={busy} onClick={()=>respond(r.id,true)}>Aceitar convite</button></div></article>)}</section>}</div>;
+}

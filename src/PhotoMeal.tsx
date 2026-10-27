@@ -42,7 +42,7 @@ async function invoke<T>(method:'GET'|'POST',signal:AbortSignal,body?:Record<str
   return data as T;
 }
 
-export default function PhotoMeal({onAccept,onManual}:{onAccept:(draft:MealDraft)=>void;onManual:()=>void}){
+export default function PhotoMeal({onAccept,onManual,initialFile}:{initialFile?:File;onAccept:(draft:MealDraft)=>void;onManual:()=>void}){
   const [blob,setBlob]=useState<Blob|null>(null);const [preview,setPreview]=useState('');const [preparing,setPreparing]=useState(false);const [analyzing,setAnalyzing]=useState(false);const [context,setContext]=useState('');
   const [result,setResult]=useState<Estimate|null>(null);const [error,setError]=useState('');const [available,setAvailable]=useState<boolean|null>(null);const [checking,setChecking]=useState(false);
   const camera=useRef<HTMLInputElement>(null);const gallery=useRef<HTMLInputElement>(null);const controller=useRef<AbortController|null>(null);const alive=useRef(true);const selection=useRef(0);
@@ -58,8 +58,9 @@ export default function PhotoMeal({onAccept,onManual}:{onAccept:(draft:MealDraft
     finally{if(alive.current)setChecking(false);}
   }
   useEffect(()=>{void checkAvailability();},[]);
-  async function choose(e:ChangeEvent<HTMLInputElement>){
-    const file=e.currentTarget.files?.[0];e.currentTarget.value='';if(!file)return;
+  useEffect(()=>{if(initialFile)void chooseFile(initialFile);},[initialFile]);
+  async function choose(e:ChangeEvent<HTMLInputElement>){const file=e.currentTarget.files?.[0];e.currentTarget.value='';if(file)await chooseFile(file);}
+  async function chooseFile(file:File){
     const version=++selection.current;setError('');setPreparing(true);setResult(null);
     try{const photo=await preparePhoto(file);if(alive.current&&version===selection.current)setBlob(photo);}
     catch(err){if(alive.current&&version===selection.current)setError(err instanceof Error?err.message:'Não foi possível abrir a foto.');}

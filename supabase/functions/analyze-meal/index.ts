@@ -40,7 +40,7 @@ export function validateEstimate(value:unknown):Estimate{
 export function createHandler({getEnv,fetcher=fetch}:{getEnv:Environment;fetcher?:Fetcher}){
   return async function handle(request:Request):Promise<Response>{
     const origin=request.headers.get('origin');
-    const allowed=(getEnv('ALLOWED_ORIGINS')||`${DEFAULT_ORIGIN},http://127.0.0.1:5173,http://localhost:5173`).split(',').map(v=>v.trim());
+    const allowed=(getEnv('ALLOWED_ORIGINS')||`${DEFAULT_ORIGIN},https://cmathxus.github.io,http://127.0.0.1:5173,http://localhost:5173`).split(',').map(v=>v.trim());
     const cors:Record<string,string>={'Access-Control-Allow-Origin':origin&&allowed.includes(origin)?origin:allowed[0],'Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Vary':'Origin','Cache-Control':'no-store'};
     function json(status:number,body:unknown,extra:Record<string,string>={}){return new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json; charset=utf-8',...extra}});}
     if(origin&&!allowed.includes(origin))return json(403,{error:'ORIGIN_NOT_ALLOWED'});

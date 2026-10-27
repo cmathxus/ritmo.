@@ -29,5 +29,13 @@ await as(10);assert.equal((await db.query('select join_group($1) as r',[token]))
 await as(11);for(let i=0;i<20;i++)assert.equal((await db.query('select preview_group_invite($1) as p',['0'.repeat(64)])).rows[0].p.error,'invalid_group_invite');assert.equal((await db.query('select preview_group_invite($1) as p',[newToken])).rows[0].p.error,'invite_rate_limit');
 await as(12);const solo=(await db.query("select create_group('Solo') as id")).rows[0].id;await db.query('select leave_group($1)',[solo]);assert.equal((await db.query('select * from groups')).rows.length,0);
 await as(13);const other=(await db.query("select create_group('Other') as id")).rows[0].id;assert.equal((await db.query('select join_group($1) as r',[newToken])).rows[0].r.error,'already_grouped');
+await db.exec('reset role;');await db.exec(readFileSync(new URL('supabase/migrations/20261027_username_invites.sql',root),'utf8'));
+await as(1);await db.query("select set_username('admin_test')");await db.query('select invite_group_username($1,$2)',[gid,'u_'+ids[14].replaceAll('-','').slice(-20)]);await assert.rejects(()=>db.query('select create_group_invite($1)',[gid]));
+await as(14);const notices=(await db.query('select * from group_notifications')).rows;assert.equal(notices.length,1);assert.equal((await db.query('select * from groups')).rows.length,0);
+await as(13);assert.equal((await db.query('select * from group_notifications')).rows.length,0);assert.equal((await db.query('select respond_group_notification($1,true) as r',[notices[0].id])).rows[0].r.error,'invite_missing');
+await as(14);assert.equal((await db.query('select respond_group_notification($1,false) as r',[notices[0].id])).rows[0].r.accepted,false);assert.equal((await db.query('select * from groups')).rows.length,0);
+await as(1);await db.query('select invite_group_username($1,$2)',[gid,'u_'+ids[14].replaceAll('-','').slice(-20)]);
+await as(14);const pending=(await db.query("select id from group_notifications where status='pending'")).rows[0].id;assert.equal((await db.query('select respond_group_notification($1,true) as r',[pending])).rows[0].r.accepted,true);assert.equal((await db.query('select * from groups')).rows.length,1);
+await assert.rejects(()=>db.query("select set_username('admin_test')"));await assert.rejects(()=>db.query("select set_username('A bad name')"));
 await db.exec('reset role;set role anon;');await assert.rejects(()=>db.query('select * from groups'));await assert.rejects(()=>db.query("select create_group('Anonymous')"));
 console.log('PASS: legacy pair migration, deterministic admin, revocation, RLS, private metabolism/goal, capacity 10, hashed/rotated invites, rate limit on failed attempts, transfer/leave/archive and anon denial.');await db.close();

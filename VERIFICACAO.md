@@ -35,3 +35,6 @@ Limite: envio/recebimento de e-mail, URL de confirmação e recuperação depend
 
 ## Publicação de grupos e acompanhamento
 31 testes aprovados, incluindo RLS em PGlite. Concorrência real no Supabase: 11 tentativas simultâneas aceitaram exatamente 9 além do administrador. Revogação após remoção confirmada. Migrações de grupos, objetivos, PAL e horários aplicadas com TLS verificado. Navegador: cadastro com PAL e objetivo, criação de grupo, geração de convite e refeição às 12:10 conferidos; painel Minha conta separado. Novos pedidos de convites por username, notificações e atalho direto de câmera ficaram adiados por solicitação do usuário.
+
+## Convites por @ e câmera persistente
+31 testes aprovados, incluindo convites privados por @, aceite/recusa, tentativa de outro destinatário, nome inválido e duplicado; fluxo antigo de links revogado. Build TypeScript/Vite aprovado. A conferência visual final ficou indisponível porque uso local do navegador foi desativado nas configurações do Work. Câmera física não testada neste ambiente.
